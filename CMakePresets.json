@@ -57,5 +57,36 @@
       "name": "windows-mingw-release",
       "configurePreset": "windows-mingw-release"
     }
+  ],
+  "testPresets": [
+    {
+      "name": "windows-mingw-debug",
+      "configurePreset": "windows-mingw-debug",
+      "output": { "outputOnFailure": true },
+      "execution": {
+        "stopOnFailure": true,
+        "noTestsAction": "error"
+      }
+    },
+    {
+      "name": "windows-mingw-relwithdebinfo",
+      "configurePreset": "windows-mingw-relwithdebinfo",
+      "output": { "outputOnFailure": true },
+      "execution": {
+        "stopOnFailure": true,
+        "noTestsAction": "error"
+      }
+    },
+    {
+      "name": "windows-mingw-release",
+      "configurePreset": "windows-mingw-release",
+      "output": { "outputOnFailure": true },
+      "execution": {
+        "stopOnFailure": true,
+        "noTestsAction": "error"
+      }
+    }
+
+
   ]
 }
