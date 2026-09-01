@@ -10,6 +10,7 @@ CMakeUserPresets.json
 
 # 本地依赖、运行数据和秘密
 node_modules/
+vcpkg_installed/
 run-data/
 .env
 *.env
