@@ -1,31 +1,27 @@
-# 构建产物
+# 构建与 IDE 产物
 build/
 cmake-build-*/
 out/
-*.exe
-*.dll
-*.obj
-*.o
-
-# IDE
 .idea/
 .vscode/
 .qtcreator/
 CMakeLists.txt.user
 CMakeUserPresets.json
 
-# Node.js
+# 本地依赖、运行数据和秘密
 node_modules/
-
-# SQLite 数据库文件（含用户数据）
+run-data/
+.env
+*.env
 *.db
 *.db-journal
 *.sqlite
+*.sqlite3
+*.log
+*.pem
+*.key
+*.p12
+*.pfx
 
-# 环境变量（含密钥）
-.env
-*.env
-# docs 下默认保留本地学习资料；W10 故障记录属于项目交付文档，允许纳入版本控制。
-docs/*
-!docs/故障记录/
-!docs/故障记录/W10-交付稳定性故障记录.md
+# 本地维护，不纳入 Git
+docs/项目规划/C++Qt学习路线-完善版.md
