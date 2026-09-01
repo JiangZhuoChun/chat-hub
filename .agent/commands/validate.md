@@ -16,7 +16,7 @@ description: “检查”模式的分层验证，只在用户说“检查”时�
 
 ## 步骤
 
-1. 读取 `AGENTS.md`、`TASK.md`、对应 PRP 和验证矩阵。
+1. 读取 `AGENTS.md`、当周需求与验收文档、对应 PRP 和验证矩阵。
 2. 确认源码、构建目录、Preset、Qt／MinGW／vcpkg 版本和 Git 状态。
 3. 按序执行适用层级：configure → build → unit／contract → 真实依赖集成 → 故障场景 → 必要时全量回归／性能／安装。
 4. 列出必须由用户完成的人工场景和观察点。

@@ -1,6 +1,6 @@
 # M0-3 PRP：最小 CTest smoke 闭环与 test presets
 
-> 状态：草案（2026-09-01）。本文件只定义可执行范围；未授权创建 `tests/`、测试源码或修改 CMake／Preset。
+> 状态：已交付（2026-09-01）。CTest 1/1 通过、0 失败 0 跳过（用户回报 1.06s；本机复跑 0.40s，退出码 0，标签 smoke／contracts 生效）；`tests/` 为唯一新增目录；`noTestsAction: "error"` 本机实证生效。落地样式（缩进／括号）由用户按 CLion 风格调整，行为与 PRP 等价。
 
 ## 1. 目标与边界
 
@@ -90,6 +90,8 @@ int main()
 ```
 
 RelWithDebInfo 与 Release 仅替换两个 preset 名称。configure、build、test preset 同名是 CMake 允许的不同命名空间，不是冲突。
+
+> 实证（2026-09-01，本机 CMake 4.3.2，schema v4）：`noTestsAction: "error"` 生效——无测试时 `ctest --preset` 退出码 8 并报 "Errors while running CTest"；移除该字段后默认退出码 0。未知或拼错的 preset 字段会被静默忽略，必须使用准确拼写。
 
 ## 6. 实施顺序与失败边界
 
