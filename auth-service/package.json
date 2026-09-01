@@ -1,0 +1,28 @@
+{
+  "name": "auth-service",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/*.test.js",
+    "test:e2e": "node --test test/cross_process_revocation.e2e.js",
+    "test:three-client": "node --test test/three_client_chat.e2e.js",
+    "test:ten-client": "node --test test/ten_client_ring.e2e.js",
+    "test:twenty-client": "node --test test/twenty_client_ring.e2e.js",
+    "test:authenticated-disconnect": "node --test test/authenticated_disconnect.e2e.js",
+    "test:mysql-write-failure": "node --test test/mysql_write_failure.e2e.js",
+    "test:auth-dependency-failure": "node --test test/auth_dependency_failure.e2e.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^13.0.2",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "redis": "6.2.1"
+  }
+}

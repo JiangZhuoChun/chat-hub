@@ -1,0 +1,45 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 21,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "debug-base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "ci-windows-mingw-debug",
+      "inherits": "debug-base",
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "$env{CHATHUB_MINGW_ROOT}/bin/c++.exe",
+        "CMAKE_PREFIX_PATH": "$env{QT_ROOT_DIR}",
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-mingw-dynamic"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "ci-windows-mingw-debug-build",
+      "configurePreset": "ci-windows-mingw-debug",
+      "jobs": 2
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "ci-windows-mingw-debug-test",
+      "configurePreset": "ci-windows-mingw-debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

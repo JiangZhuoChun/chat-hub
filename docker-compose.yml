@@ -1,0 +1,58 @@
+services:
+  mysql:
+    image: mysql:8.4.11
+
+    environment:
+        MYSQL_DATABASE: ${CHATHUB_MYSQL_DATABASE}
+        MYSQL_USER: ${CHATHUB_MYSQL_USER}
+        MYSQL_PASSWORD: ${CHATHUB_MYSQL_PASSWORD}
+        MYSQL_ROOT_PASSWORD: ${CHATHUB_MYSQL_ROOT_PASSWORD}
+
+    ports:
+      - "127.0.0.1:${CHATHUB_MYSQL_HOST_PORT}:3306"
+
+    volumes:
+      - chathub-mysql-data:/var/lib/mysql
+
+    networks:
+      - chathub-infra
+
+    healthcheck:
+      test: ["CMD-SHELL", 'mysql --protocol=tcp -h 127.0.0.1 -u"$$MYSQL_USER" -p"$$MYSQL_PASSWORD" "$$MYSQL_DATABASE" -e "SELECT 1"']
+      start_period: 30s
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+  redis:
+    image: redis:8.2.9-alpine
+    # 开启 AOF 持久化
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+
+    ports:
+      - "127.0.0.1:${CHATHUB_REDIS_HOST_PORT}:6379"
+
+    volumes:
+      - chathub-redis-data:/data
+
+    networks:
+      - chathub-infra
+
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      start_period: 30s
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+volumes:
+  chathub-mysql-data:
+  chathub-redis-data:
+
+networks:
+  chathub-infra:
