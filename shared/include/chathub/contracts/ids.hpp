@@ -102,7 +102,7 @@ class UuidId {
     return UuidId{detail::to_lower_ascii(id)};
   }
 
-  const std::string& value() const noexcept { return value_; }
+  [[nodiscard]] const std::string& value() const noexcept { return value_; }
 
  private:
   explicit UuidId(std::string value) : value_(std::move(value)) {}
@@ -123,8 +123,7 @@ template <typename Tag>
 class DecimalSeq {
  public:
   // 线上使用规范十进制字符串（路线 9.4）：非空、全数字、无前导零、不溢出。
-  // from_chars 不分配内存；result.ptr 必须走到末尾，才能拒绝 "4x"
-  // 这类部分解析。
+  // from_chars 不分配内存；result.ptr 必须走到末尾，才能拒绝 "4x"这类部分解析。
   static std::optional<DecimalSeq> parse(std::string_view text) {
     if (text.empty() || (text.size() > 1 && text.front() == '0')) {
       return std::nullopt;
@@ -142,9 +141,9 @@ class DecimalSeq {
     return DecimalSeq{value};
   }
 
-  std::uint64_t value() const noexcept { return value_; }
+  [[nodiscard]] std::uint64_t value() const noexcept { return value_; }
 
-  std::string to_decimal_string() const { return std::to_string(value_); }
+  [[nodiscard]] std::string to_decimal_string() const { return std::to_string(value_); }
 
  private:
   explicit DecimalSeq(std::uint64_t value) noexcept : value_(value) {}

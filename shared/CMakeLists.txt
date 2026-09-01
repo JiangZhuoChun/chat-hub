@@ -12,4 +12,5 @@ target_include_directories(chathub_contracts INTERFACE include)
 target_sources(chathub_contracts INTERFACE
         include/chathub/contracts/ids.hpp
         include/chathub/contracts/outcome.hpp
+        include/chathub/contracts/protocol_descriptor.hpp
 )
