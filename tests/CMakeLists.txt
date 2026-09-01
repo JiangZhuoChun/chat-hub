@@ -23,6 +23,15 @@ target_link_libraries(chathub_contracts_protocol_test PRIVATE
 add_test(NAME chathub.contracts.protocol COMMAND chathub_contracts_protocol_test)
 set_tests_properties(chathub.contracts.protocol PROPERTIES LABELS "unit;contracts")
 
+#M1-4 帧层单元测试：半包、粘包、空正文、超长、非法 UTF-8、未知 type、版本不兼容、往返。
+add_executable(chathub_frame_decoder_test frame_decoder_test.cpp)
+target_link_libraries(chathub_frame_decoder_test PRIVATE
+        chathub::contracts
+)
+add_test(NAME chathub.contracts.frame COMMAND chathub_frame_decoder_test)
+set_tests_properties(chathub.contracts.frame PROPERTIES LABELS "unit;contracts")
+
+
 #----------架构边界断言（最小版：直接链接白名单）----------
 function(chathub_check_direct_links target)
     set(_allowed ${ARGN})

@@ -13,4 +13,5 @@ target_sources(chathub_contracts INTERFACE
         include/chathub/contracts/ids.hpp
         include/chathub/contracts/outcome.hpp
         include/chathub/contracts/protocol_descriptor.hpp
+        include/chathub/contracts/frame.hpp
 )
