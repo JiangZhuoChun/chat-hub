@@ -1,6 +1,6 @@
 # M1-4 PRP：安全 FrameDecoder
 
-> 状态：已给出待落地（2026-09-01）。实现内容已交付；落地与验证由用户完成，只有用户明确要求“帮我实现 M1-4”时 AI 才代写。
+> 状态：自动验证通过（2026-09-01）。活动 `windows-mingw-debug` 配置／构建成功，CTest 4/4 通过、0 失败、0 跳过。
 
 ## 1. 目标与范围
 
@@ -53,6 +53,16 @@ ctest --preset windows-mingw-debug
 
 ## 7. 完成清单
 
-- [ ] frame.hpp 落地（常量／校验／解码器／编码器）；
-- [ ] CTest 4/4 通过；
-- [ ] 周文档两处同步。
+- [x] frame.hpp 落地（常量／校验／解码器／编码器）；
+- [x] CTest 4/4 通过；
+- [x] 周文档两处同步。
+
+## 8. 本轮验证证据
+
+```powershell
+cmake --preset windows-mingw-debug
+cmake --build --preset windows-mingw-debug
+ctest --preset windows-mingw-debug
+```
+
+退出码均为 0；CTest 4/4 通过、0 失败、0 跳过。修复包括：成功产出帧后推进已消费字节数；长度字段先转换为 `uint32_t` 再左移；编码端拒绝非法 UTF-8；测试验证半包仅在最后一个字节后产出，并覆盖编码端对未知 type、超长正文和非法 UTF-8 的拒绝。

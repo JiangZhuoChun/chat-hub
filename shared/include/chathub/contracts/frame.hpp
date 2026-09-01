@@ -6,6 +6,7 @@
 // magic/帧头/长度错误直接进入 failed 态，不扫描重同步（D70）；
 // 可识别的版本不兼容由 Session 层发送 protocol_error 后关闭（M1-6/M1-7）。
 
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -94,11 +95,11 @@ enum class FrameErrorKind {
 class FrameDecoder {
 public:
   // 喂入任意长度字节：半包、粘包统一处理。失败后保持 failed，不再产出
-  void feed(const std::uint8_t* date,std::size_t size) {
+  void feed(const std::uint8_t* data,std::size_t size) {
     if (failed_) {
       return;
     }
-    buffer_.insert(buffer_.end(),date,date + size);
+    buffer_.insert(buffer_.end(),data,data + size);
     process();
     compact();
   }
@@ -148,6 +149,8 @@ private:
         return;
       }
       ready_.push_back(Frame{frame_type_,std::move(body)});
+      // 当前帧已完整转移到 ready_；推进游标后，循环才能从下一帧开始解析。
+      consumed_ += kFrameHeaderSize + body_length_;
     }
   }
 
@@ -168,11 +171,12 @@ private:
       return;
     }
 
+    // 必须在左移前提升到 32 位，避免 uint8_t 提升为 int 后移位溢出。
     const std::uint32_t body_length =
-      (static_cast<std::uint32_t>(buffer_[offset + 4] << 24)) |
-      (static_cast<std::uint32_t>(buffer_[offset + 5] << 16)) |
-      (static_cast<std::uint32_t>(buffer_[offset + 6] << 8))  |
-      (static_cast<std::uint32_t>(buffer_[offset + 7]));
+      (static_cast<std::uint32_t>(buffer_[offset + 4]) << 24) |
+      (static_cast<std::uint32_t>(buffer_[offset + 5]) << 16) |
+      (static_cast<std::uint32_t>(buffer_[offset + 6]) << 8)  |
+      static_cast<std::uint32_t>(buffer_[offset + 7]);
     if (body_length > descriptor->max_body) {
       fail(FrameErrorKind::body_too_large); // D09：分配前拒绝
       return;
@@ -203,7 +207,9 @@ private:
 // 编码一帧：8 字节帧头（大端）＋正文；正文超过该 type 上限时双向拒绝（D09）。
 inline  std::optional<std::vector<std::uint8_t>> encode_frame(ProtocolType type,std::string_view body) {
   const auto* descriptor = find_protocol(type);
-  if (descriptor == nullptr || body.size() > descriptor->max_body) {
+  // 出站也只允许已登记 type、长度合规且 UTF-8 合法的正文，与入站校验对称。
+  if (descriptor == nullptr || body.size() > descriptor->max_body ||
+      !is_valid_utf8(body)) {
     return std::nullopt;
   }
 
