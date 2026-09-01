@@ -1,6 +1,6 @@
 # M1-2 PRP：强类型 ID 与 Outcome
 
-> 状态：已给出待落地（2026-09-01）。实现内容已交付；落地与验证由用户完成，只有用户明确要求“帮我实现 M1-2”时 AI 才代写。
+> 状态：自动验证通过（2026-09-01）。用户完成落地；Debug configure／build／CTest 为 2/2 通过、0 失败、0 跳过。
 
 ## 1. 目标与范围
 
@@ -57,7 +57,17 @@ ctest --preset windows-mingw-debug
 
 ## 8. 完成清单
 
-- [ ] ids.hpp／outcome.hpp 落地且 header-only；
-- [ ] contracts target 暴露 include 目录，smoke 仍通过；
-- [ ] CTest 2/2 通过；
-- [ ] 周文档两处同步。
+- [x] ids.hpp／outcome.hpp 落地且 header-only；
+- [x] contracts target 暴露 include 目录，smoke 仍通过；
+- [x] CTest 2/2 通过；
+- [x] 周文档两处同步。
+
+## 9. 自动验证证据
+
+```text
+cmake --preset windows-mingw-debug       -> exit 0
+cmake --build --preset windows-mingw-debug -> exit 0
+ctest --preset windows-mingw-debug       -> 2/2 passed, 0 failed, 0 skipped, exit 0
+```
+
+已在本次新增的 contracts、测试与 CMake target 关联处补充说明性注释；注释不改变类型、解析、测试或 target 语义。
