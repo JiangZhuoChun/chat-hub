@@ -1,6 +1,6 @@
 # M1-3 PRP：协议描述 ProtocolDescriptor
 
-> 状态：已给出待落地（2026-09-01）。实现内容已交付；落地与验证由用户完成，只有用户明确要求“帮我实现 M1-3”时 AI 才代写。
+> 状态：已交付（2026-09-01）。首验失败两处均修正：① `has_state` 状态序号误当位掩码（用户定位）；② 一条断言期望写反（已认证集合不应包含 awaiting_hello）。修正后干净目录 CTest 3/3 退出码 0；保留 type nullptr 测试与说明性注释已补。
 
 ## 1. 目标与范围
 
@@ -14,7 +14,7 @@
 | --- | --- | --- |
 | type／名称 | 设计合同 §8 类型全表，逐字照录 | §8“当前已分配的类型” |
 | 方向 | request（C2S 请求）／response（配对响应）／push（S2C 无配对）／bidirectional（heartbeat） | §8 表“方向”列 |
-| 允许连接状态 | hello 仅 `awaiting_hello`；注册、登录、恢复、重置＋heartbeat → `unauthenticated`；protocol_error → 全状态；其余（业务＋push）→ `authenticated` | D72 状态机 |
+| 允许连接状态 | hello 仅 `awaiting_hello`；注册、登录、恢复、重置仅 `unauthenticated`；heartbeat → `unauthenticated \| authenticated`；protocol_error → 全状态；其余（业务＋push）→ `authenticated` | D72 状态机 |
 | 默认超时 | hello 5s；注册 prepare／finalize、登录、恢复会话、重置密码 10s；历史、联系人、申请列表 10s；发送聊天 5s；普通好友、资料、清空、阅读进度 5s；退出 2s；响应／推送／心跳／protocol_error = 0 | D74、D73 |
 | `delivery_progress`（0x52） | 5000ms——D74 未列明，按轻量请求归 5s 档（**实现决定，M5 对账**） | 本步决定 |
 | `conversation_list`（0x54） | 10000ms——响应体最重的读请求，与历史同档（**实现决定，M5 对账**） | 本步决定 |
@@ -53,4 +53,15 @@ ctest --preset windows-mingw-debug
 
 - [ ] protocol_descriptor.hpp 落地，54 项与设计 §8 逐字一致；
 - [ ] CTest 3/3 通过；
-- [ ] 周文档两处同步。
+- [x] 周文档两处同步。
+
+## 8. 本轮检查证据
+
+```text
+CLion: chathub_contracts_protocol_test -> exit 0
+CLion: 所有 CTest -> 3/3 passed, 0 failed, 0 skipped, exit 0
+```
+
+已修复的根因：`ConnectionState` 使用状态序号（0／1／2），`ConnectionStates` 使用位掩码（1／2／4）；`has_state` 现先左移生成掩码后再判断。
+
+剩余检查项：删除 `has_state` 函数声明行末意外的反斜杠；为 `authenticated` 状态位补正反断言；验证每个已登记 type 可被 `find_protocol` 找到，并以一个保留 type（例如 `0x03`）断言返回 `nullptr`。
