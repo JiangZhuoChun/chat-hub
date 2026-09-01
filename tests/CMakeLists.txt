@@ -15,7 +15,7 @@ add_test(NAME chathub.contracts.types COMMAND chathub_contracts_types_test)
 # 标签让后续可按 unit 或 contracts 维度筛选测试。
 set_tests_properties(chathub.contracts.types PROPERTIES LABELS "unit;contracts")
 
-#/M1-3 注册表测试：type/name 唯一、请求响应配对、状态合法、上限与超时、capability。
+# M1-3 注册表测试：作为 contracts 的真实消费者，验证公开头、C++20 特性和协议合同一起生效。
 add_executable(chathub_contracts_protocol_test contracts_protocol_test.cpp)
 target_link_libraries(chathub_contracts_protocol_test PRIVATE
         chathub::contracts

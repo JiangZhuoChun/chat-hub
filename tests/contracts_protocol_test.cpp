@@ -29,10 +29,12 @@ static int test_unique_type_and_name() {
 
 static int test_find_protocol()
 {
+  // 已登记 type 必须定位到自身；不仅验证“找到了”，还验证没有错指到别的描述项。
   for (const auto& descriptor : kProtocolDescriptors) {
     CHECK(find_protocol(descriptor.type) == &descriptor);
   }
 
+  // 0x03 是设计合同保留号，供 M1-4 将其判为未知 type，不能被意外注册。
   CHECK(find_protocol(static_cast<ProtocolType>(0x03)) == nullptr);
   return 0;
 }
@@ -62,6 +64,7 @@ static int test_request_response_pairing() {
 
 constexpr bool is_preauth_type(const ProtocolType type) noexcept
 {
+  // 这十个 type 在 hello 后、认证成功前使用；D72 要求它们仅允许未认证状态。
   switch (type) {
     case ProtocolType::register_prepare_request:
     case ProtocolType::register_prepare_response:
@@ -91,6 +94,7 @@ static int test_states()
   CHECK(!has_state(ConnectionStates::unauthenticated,
       ConnectionState::authenticated));
 
+  // authenticated 对应第三个状态位（1 << 2）；正反例防止位掩码再次错位。
   CHECK(has_state(ConnectionStates::authenticated,
       ConnectionState::authenticated));
   CHECK(!has_state(ConnectionStates::authenticated,

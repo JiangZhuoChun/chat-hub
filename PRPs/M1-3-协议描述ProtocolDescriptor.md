@@ -51,8 +51,8 @@ ctest --preset windows-mingw-debug
 
 ## 7. 完成清单
 
-- [ ] protocol_descriptor.hpp 落地，54 项与设计 §8 逐字一致；
-- [ ] CTest 3/3 通过；
+- [x] protocol_descriptor.hpp 落地，54 项与设计 §8 逐字一致；
+- [x] CTest 3/3 通过；
 - [x] 周文档两处同步。
 
 ## 8. 本轮检查证据
@@ -64,4 +64,4 @@ CLion: 所有 CTest -> 3/3 passed, 0 failed, 0 skipped, exit 0
 
 已修复的根因：`ConnectionState` 使用状态序号（0／1／2），`ConnectionStates` 使用位掩码（1／2／4）；`has_state` 现先左移生成掩码后再判断。
 
-剩余检查项：删除 `has_state` 函数声明行末意外的反斜杠；为 `authenticated` 状态位补正反断言；验证每个已登记 type 可被 `find_protocol` 找到，并以一个保留 type（例如 `0x03`）断言返回 `nullptr`。
+本轮复查已收口：已删除行末反斜杠；已补 `authenticated` 状态位正反断言；已验证每个已登记 type 可被 `find_protocol` 找到，保留 `0x03` 返回 `nullptr`。本次另为 54 个 ProtocolType 枚举项和新增测试边界补充说明性注释，未改变协议行为。

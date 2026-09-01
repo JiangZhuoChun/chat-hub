@@ -12,75 +12,75 @@
 namespace chathub::contracts {
 
 enum class ProtocolType : std::uint8_t {
-  protocol_error = 0x01,
-  heartbeat = 0x02,
+  protocol_error = 0x01,  // 服务端报告可识别的协议错误后关闭连接。
+  heartbeat = 0x02,       // 双向空正文保活，不建立请求／响应配对。
 
-  hello_request = 0x04,
-  hello_response = 0x05,
+  hello_request = 0x04,   // TLS 后的首个客户端请求，用于版本与能力协商。
+  hello_response = 0x05,  // hello 的服务端响应，给出协商后的连接参数。
 
-  register_prepare_request = 0x10,
-  register_prepare_response = 0x11,
+  register_prepare_request = 0x10,   // 创建待完成注册并请求后续确认材料。
+  register_prepare_response = 0x11,  // 返回注册 prepare 阶段的结果。
 
-  register_finalize_request = 0x12,
-  register_finalize_response = 0x13,
+  register_finalize_request = 0x12,   // 提交确认信息并完成账号激活。
+  register_finalize_response = 0x13,  // 返回注册 finalize 阶段的结果。
 
-  login_request = 0x14,
-  login_response = 0x15,
+  login_request = 0x14,   // 使用账号凭据建立新的认证会话。
+  login_response = 0x15,  // 返回登录成功或受控业务失败。
 
-  session_resume_request = 0x16,
-  session_resume_response = 0x17,
+  session_resume_request = 0x16,   // 用已有会话材料恢复认证状态。
+  session_resume_response = 0x17,  // 返回会话恢复结果。
 
-  password_reset_request = 0x18,
-  password_reset_response = 0x19,
+  password_reset_request = 0x18,   // 发起或提交密码重置流程。
+  password_reset_response = 0x19,  // 返回密码重置流程的结果。
 
-  logout_request = 0x1A,
-  logout_response = 0x1B,
+  logout_request = 0x1A,   // 主动撤销当前已认证会话。
+  logout_response = 0x1B,  // 确认登出处理已完成。
 
-  profile_update_request = 0x1C,
-  profile_update_response = 0x1D,
+  profile_update_request = 0x1C,   // 修改当前账号的公开资料。
+  profile_update_response = 0x1D,  // 返回资料更新结果。
 
-  user_lookup_request = 0x30,
-  user_lookup_response = 0x31,
+  user_lookup_request = 0x30,   // 按受限条件查询其他用户资料。
+  user_lookup_response = 0x31,  // 返回用户查找结果。
 
-  friend_request_create_request = 0x32,
-  friend_request_create_response = 0x33,
-  friend_request_list_request = 0x34,
-  friend_request_list_response = 0x35,
-  friend_request_accept_request = 0x36,
-  friend_request_accept_response = 0x37,
-  friend_request_reject_request = 0x38,
-  friend_request_reject_response = 0x39,
-  friend_request_withdraw_request = 0x3A,
-  friend_request_withdraw_response = 0x3B,
-  friend_delete_request = 0x3C,
-  friend_delete_response = 0x3D,
+  friend_request_create_request = 0x32,   // 向目标账号创建好友申请。
+  friend_request_create_response = 0x33,  // 返回创建好友申请的结果。
+  friend_request_list_request = 0x34,     // 分页读取当前账号的好友申请。
+  friend_request_list_response = 0x35,    // 返回好友申请列表。
+  friend_request_accept_request = 0x36,   // 接受一条待处理好友申请。
+  friend_request_accept_response = 0x37,  // 返回接受申请后的关系结果。
+  friend_request_reject_request = 0x38,   // 拒绝一条待处理好友申请。
+  friend_request_reject_response = 0x39,  // 返回拒绝申请的结果。
+  friend_request_withdraw_request = 0x3A,   // 撤回由当前账号发出的好友申请。
+  friend_request_withdraw_response = 0x3B,  // 返回撤回申请的结果。
+  friend_delete_request = 0x3C,   // 解除当前账号与目标账号的好友关系。
+  friend_delete_response = 0x3D,  // 返回解除好友关系的结果。
 
-  contact_list_request = 0x3E,
-  contact_list_response = 0x3F,
+  contact_list_request = 0x3E,   // 分页读取当前账号的联系人投影。
+  contact_list_response = 0x3F,  // 返回联系人列表。
 
-  message_send_request = 0x50,
-  message_send_response = 0x51,
+  message_send_request = 0x50,   // 向已建立关系的目标发送 text_v1 消息。
+  message_send_response = 0x51,  // 返回消息落库与序号分配结果。
 
-  delivery_progress_request = 0x52,
-  delivery_progress_response = 0x53,
+  delivery_progress_request = 0x52,   // 上报已连续处理完成的 delivery 序号。
+  delivery_progress_response = 0x53,  // 确认服务端已持久化处理进度。
 
-  conversation_list_request = 0x54,
-  conversation_list_response = 0x55,
-  conversation_history_request = 0x56,
-  conversation_history_response = 0x57,
-  conversation_read_request = 0x58,
-  conversation_read_response = 0x59,
-  conversation_clear_request = 0x5A,
-  conversation_clear_response = 0x5B,
+  conversation_list_request = 0x54,   // 分页读取会话列表投影。
+  conversation_list_response = 0x55,  // 返回会话列表及游标。
+  conversation_history_request = 0x56,   // 按会话与游标读取历史项目。
+  conversation_history_response = 0x57,  // 返回升序展示的会话历史。
+  conversation_read_request = 0x58,   // 上报当前会话的单调阅读进度。
+  conversation_read_response = 0x59,  // 确认阅读进度已处理。
+  conversation_clear_request = 0x5A,   // 清空当前账号视角下的会话内容。
+  conversation_clear_response = 0x5B,  // 返回清空会话的结果。
 
-  session_terminated_push = 0x80,
-  profile_updated_push = 0x81,
-  friend_request_received_push = 0x82,
-  friendship_changed_push = 0x83,
-  friend_request_changed_push = 0x84,
-  conversation_event_push = 0x85,
-  message_received_push = 0x86,
-  delivery_sync_complete_push = 0x87,
+  session_terminated_push = 0x80,   // 服务端通知当前会话已被终止。
+  profile_updated_push = 0x81,      // 服务端推送联系人资料已变更。
+  friend_request_received_push = 0x82,  // 服务端推送收到新的好友申请。
+  friendship_changed_push = 0x83,       // 服务端推送好友关系状态变化。
+  friend_request_changed_push = 0x84,   // 服务端推送既有好友申请状态变化。
+  conversation_event_push = 0x85,       // 服务端推送会话中的系统事件。
+  message_received_push = 0x86,         // 服务端推送接收方的 text_v1 消息。
+  delivery_sync_complete_push = 0x87,   // 服务端确认补收窗口已同步至目标序号。
 };
 
 enum class Direction : std::uint8_t {
