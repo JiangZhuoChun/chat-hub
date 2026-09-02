@@ -32,6 +32,14 @@ add_test(NAME chathub.contracts.frame COMMAND chathub_frame_decoder_test)
 set_tests_properties(chathub.contracts.frame PROPERTIES LABELS "unit;contracts")
 
 
+# M1-5 开发 CA：算法、扩展、SAN、序列号、链签名、非法 IPv4。
+add_executable(chathub_pki_dev_ca_test pki_dev_ca_test.cpp)
+target_link_libraries(chathub_pki_dev_ca_test PRIVATE
+        chathub::pki
+)
+add_test(NAME chathub.pki.dev_ca COMMAND chathub_pki_dev_ca_test)
+set_tests_properties(chathub.pki.dev_ca PROPERTIES LABELS "unit;pki")
+
 #----------架构边界断言（最小版：直接链接白名单）----------
 function(chathub_check_direct_links target)
     set(_allowed ${ARGN})
