@@ -12,6 +12,7 @@ include(CTest)
 add_subdirectory(shared)
 add_subdirectory(chat-server)
 add_subdirectory(client-qt)
+add_subdirectory(tools/pki)
 
 if(BUILD_TESTING)
     add_subdirectory(tests)
