@@ -1,6 +1,6 @@
 # M1-6 PRP：TLS 双端
 
-> 状态：进行中（2026-09-03）。Task 1／Task 2／Task 3a 自动验证通过；Task 3b 真实 TLS 集成仅规划。
+> 状态：自动验证通过（2026-09-03）。Task 1／Task 2／Task 3a／Task 3b 自动验证通过。
 
 ## 1. 目标与范围
 
@@ -34,7 +34,7 @@
 - Task 1：`vcpkg.json` 加 `asio`；`chathub_server_transport` 为 STATIC adapter；`TlsContext` 声明位于 `chat-server/include/chathub/server/transport/tls_context.hpp`，实现位于 `chat-server/src/tls_context.cpp`；测试位于 `tests/tls_context_test.cpp`
 - Task 2：`client-qt/CMakeLists.txt` 加 Qt6::Network；客户端 TLS 封装位于 `client-qt/include/chathub/client/infrastructure/tls_client.hpp` 和 `client-qt/src/tls_client.cpp`
 - Task 3a：服务端握手声明位于 `chat-server/include/chathub/server/transport/tls_handshake.hpp`，实现位于 `chat-server/src/tls_handshake.cpp`
-- Task 3b：真实 TLS 集成测试 target（仅规划）
+- Task 3b：集成测试位于 `tests/tls_integration_test.cpp`，target 配置位于 `tests/CMakeLists.txt`
 
 ## 5. 验证命令与通过标准
 
@@ -49,6 +49,8 @@ Task 1 通过：CTest 6/6（既有 5 + 新增 `chathub.server.tls_context`）；
 2026-09-03 验证：CLion 活动配置 `windows-mingw-debug-local`、Qt-MinGW-13.1；“所有 CTest”退出码 0，6/6 通过、0 失败、0 跳过。
 
 2026-09-03 Task 3a 验证：活动构建目录重新编译 `chathub_server_transport`，退出码 0；随后 CLion“所有 CTest”退出码 0，6/6 通过、0 失败、0 跳过。Task 3a 本步只以 build 验证，真实握手行为并入 Task 3b。
+
+2026-09-03 Task 3b 验证：CLion `chathub_tls_integration_test` 退出码 0；CLion“所有 CTest”退出码 0，7/7 通过、0 失败、0 跳过。覆盖正确 CA＋IP 的服务端／客户端握手、错误 CA 拒绝、错误 IP 拒绝、静默 TCP peer 触发服务端 TLS 5 秒超时，且测试未调用 `ignoreSslErrors()`。
 
 ## 6. 风险与停止条件
 
@@ -69,5 +71,5 @@ Task 1 通过：CTest 6/6（既有 5 + 新增 `chathub.server.tls_context`）；
 - [x] Task 1 服务端 `TlsContext`（证书加载）＋单测；
 - [x] Task 2 客户端 `QSslSocket` TLS 封装；
 - [x] Task 3a 服务端 `TlsHandshake`（握手＋超时封装）；
-- [ ] Task 3b 真实 TLS 集成测试（握手／拒绝／不降级）；
+- [x] Task 3b 真实 TLS 集成测试（握手／拒绝／不降级）；
 - [x] 周文档同步。
