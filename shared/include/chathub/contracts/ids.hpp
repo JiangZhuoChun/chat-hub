@@ -20,7 +20,7 @@ namespace chathub::contracts {
 namespace detail {
 // detail 中的函数只服务于本头文件的解析，不是对外业务 API。
 // 4—32 个英文字母或数字，必须以字母开头（D44）
-inline bool is_account_name(std::string_view name) noexcept {
+inline bool isAccountName(std::string_view name) noexcept {
   if (name.size() < 4 || name.size() > 32) {
     return false;
   }
@@ -41,7 +41,7 @@ inline bool is_account_name(std::string_view name) noexcept {
 }
 
 // 36 字符 8-4-4-4-12 十六进制；接受大小写。
-inline bool is_uuid(std::string_view id) noexcept {
+inline bool isUuid(std::string_view id) noexcept {
   if (id.size() != 36) {
     return false;
   }
@@ -62,7 +62,7 @@ inline bool is_uuid(std::string_view id) noexcept {
   return true;
 }
 
-inline std::string to_lower_ascii(std::string_view text) {
+inline std::string toLowerAscii(std::string_view text) {
   std::string out;
   out.reserve(text.size());
   for (const char c : text) {
@@ -76,10 +76,10 @@ class AccountName {
  public:
   // 成功时把值统一存成小写；因此 value() 可直接用于唯一性比较和登录查找。
   static std::optional<AccountName> parse(std::string_view name) {
-    if (!detail::is_account_name(name)) {
+    if (!detail::isAccountName(name)) {
       return std::nullopt;
     }
-    return AccountName{detail::to_lower_ascii(name)};
+    return AccountName{detail::toLowerAscii(name)};
   }
 
   [[nodiscard]] const std::string& value() const noexcept { return value_; }
@@ -96,10 +96,10 @@ class UuidId {
   // Tag 只存在于类型系统：三个 UUID 的运行时表示相同，但不能互相传参。
   // 解析接受大小写，存储统一小写；线格式由 M1-3 ProtocolDescriptor 定型。
   static std::optional<UuidId> parse(std::string_view id) {
-    if (!detail::is_uuid(id)) {
+    if (!detail::isUuid(id)) {
       return std::nullopt;
     }
-    return UuidId{detail::to_lower_ascii(id)};
+    return UuidId{detail::toLowerAscii(id)};
   }
 
   [[nodiscard]] const std::string& value() const noexcept { return value_; }
@@ -143,7 +143,7 @@ class DecimalSeq {
 
   [[nodiscard]] std::uint64_t value() const noexcept { return value_; }
 
-  [[nodiscard]] std::string to_decimal_string() const { return std::to_string(value_); }
+  [[nodiscard]] std::string toDecimalString() const { return std::to_string(value_); }
 
  private:
   explicit DecimalSeq(std::uint64_t value) noexcept : value_(value) {}

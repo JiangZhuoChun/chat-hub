@@ -17,7 +17,7 @@ struct Error {
 };
 
 // 本函数只检查 snake_case 形状；D128 完整错误码集合的注册表留给 M1-3。
-inline bool is_snake_case_code(std::string_view code) noexcept
+inline bool isSnakeCaseCode(std::string_view code) noexcept
 {
     if (code.empty() || code.front() == '_' || code.back() == '_') {
         return false;
@@ -36,7 +36,7 @@ template<typename T>
 using Outcome = std::variant<T, Error>;
 
 template<typename T>
-bool is_ok(const Outcome<T>& result) noexcept
+bool isOk(const Outcome<T>& result) noexcept
 {
     //判断 variant 当前是否存的是 T
     return std::holds_alternative<T>(result);
@@ -45,7 +45,7 @@ bool is_ok(const Outcome<T>& result) noexcept
 template<typename T>
 const T& value(const Outcome<T>& result)
 {
-    // 前置条件：is_ok(result) 为 true；否则 std::get 抛出，表示调用方违反使用约定。
+    // 前置条件：isOk(result) 为 true；否则 std::get 抛出，表示调用方违反使用约定。
     //取出当前保存的 T,通常返回引用，可避免复制
     return std::get<T>(result);
 }
@@ -53,7 +53,7 @@ const T& value(const Outcome<T>& result)
 template<typename T>
 const Error& error(const Outcome<T>& result)
 {
-    // 前置条件：is_ok(result) 为 false；业务失败本身仍以 Error 返回，不用异常表达。
+    // 前置条件：isOk(result) 为 false；业务失败本身仍以 Error 返回，不用异常表达。
     return std::get<Error>(result);
 }
 

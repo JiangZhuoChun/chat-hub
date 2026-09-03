@@ -1,6 +1,6 @@
 # M1-3 PRP：协议描述 ProtocolDescriptor
 
-> 状态：已交付（2026-09-01）。首验失败两处均修正：① `has_state` 状态序号误当位掩码（用户定位）；② 一条断言期望写反（已认证集合不应包含 awaiting_hello）。修正后干净目录 CTest 3/3 退出码 0；保留 type nullptr 测试与说明性注释已补。
+> 状态：已交付（2026-09-01）。首验失败两处均修正：① `hasState` 状态序号误当位掩码（用户定位）；② 一条断言期望写反（已认证集合不应包含 awaiting_hello）。修正后干净目录 CTest 3/3 退出码 0；保留 type nullptr 测试与说明性注释已补。
 
 ## 1. 目标与范围
 
@@ -30,7 +30,7 @@
 
 ## 4. 结构变化
 
-- 新增：`shared/include/chathub/contracts/protocol_descriptor.hpp`（`ProtocolType` 54 项、`Direction`、`ConnectionState(s)`、`ProtocolDescriptor`、`kProtocolDescriptors`、`find_protocol`）
+- 新增：`shared/include/chathub/contracts/protocol_descriptor.hpp`（`ProtocolType` 54 项、`Direction`、`ConnectionState(s)`、`ProtocolDescriptor`、`kProtocolDescriptors`、`findProtocol`）
 - 新增：`tests/contracts_protocol_test.cpp`；修改：`tests/CMakeLists.txt`（注册 `chathub.contracts.protocol`，标签 unit;contracts）
 
 ## 5. 验证命令与通过标准
@@ -47,7 +47,7 @@ ctest --preset windows-mingw-debug
 
 - 类型号是永久线协议合同：录入后不得改值；发现与设计 §8 不一致立即停止；
 - 与 M1-2 实现决定的对账点：`MessageId` 线格式、UUID 小写规范化——在 M1-4 codec 落地前确认；
-- 未列出的 type 范围（0x03、0x06—0x0F、0x1E—0x2F 等）保持预留，`find_protocol` 返回 `nullptr` 供 M1-4 判“未知 type”。
+- 未列出的 type 范围（0x03、0x06—0x0F、0x1E—0x2F 等）保持预留，`findProtocol` 返回 `nullptr` 供 M1-4 判“未知 type”。
 
 ## 7. 完成清单
 
@@ -62,6 +62,6 @@ CLion: chathub_contracts_protocol_test -> exit 0
 CLion: 所有 CTest -> 3/3 passed, 0 failed, 0 skipped, exit 0
 ```
 
-已修复的根因：`ConnectionState` 使用状态序号（0／1／2），`ConnectionStates` 使用位掩码（1／2／4）；`has_state` 现先左移生成掩码后再判断。
+已修复的根因：`ConnectionState` 使用状态序号（0／1／2），`ConnectionStates` 使用位掩码（1／2／4）；`hasState` 现先左移生成掩码后再判断。
 
-本轮复查已收口：已删除行末反斜杠；已补 `authenticated` 状态位正反断言；已验证每个已登记 type 可被 `find_protocol` 找到，保留 `0x03` 返回 `nullptr`。本次另为 54 个 ProtocolType 枚举项和新增测试边界补充说明性注释，未改变协议行为。
+本轮复查已收口：已删除行末反斜杠；已补 `authenticated` 状态位正反断言；已验证每个已登记 type 可被 `findProtocol` 找到，保留 `0x03` 返回 `nullptr`。本次另为 54 个 ProtocolType 枚举项和新增测试边界补充说明性注释，未改变协议行为。

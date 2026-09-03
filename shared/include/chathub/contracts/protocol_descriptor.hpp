@@ -109,7 +109,7 @@ constexpr ConnectionStates operator|(ConnectionStates a,ConnectionStates b) noex
     static_cast<std::uint8_t>(a) | static_cast<std::uint8_t>(b));
 }
 
-constexpr bool has_state(ConnectionStates states, ConnectionState state) noexcept {
+constexpr bool hasState(ConnectionStates states, ConnectionState state) noexcept {
   // ConnectionState 是序号（0/1/2），必须先左移成位掩码（1/2/4）再按位与。
   const auto mask = static_cast<std::uint8_t>(
     1U << static_cast<std::uint8_t>(state));
@@ -259,7 +259,7 @@ inline constexpr std::array<ProtocolDescriptor, 54> kProtocolDescriptors{{
      ConnectionStates::authenticated, "", kMaxJsonBody, 0, {}},
 }};
 
-constexpr const ProtocolDescriptor* find_protocol(ProtocolType type) noexcept {
+constexpr const ProtocolDescriptor* findProtocol(ProtocolType type) noexcept {
   for (const auto& descriptor : kProtocolDescriptors) {
     if (descriptor.type == type) {
       return &descriptor;

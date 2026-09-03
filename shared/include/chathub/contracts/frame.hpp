@@ -6,6 +6,13 @@
 // magic/帧头/长度错误直接进入 failed 态，不扫描重同步（D70）；
 // 可识别的版本不兼容由 Session 层发送 protocol_error 后关闭（M1-6/M1-7）。
 
+// 0      1      2        3        4         7
+// +------+------+--------+--------+-----------+
+// | 'C'  | 'H'  | ver=1  | type   | body_len  |  大端 uint32
+// +------+------+--------+--------+-----------+
+// |              UTF-8 正文（可为空）          |
+// +-------------------------------------------+
+
 #include <cstddef>
 #include <cstdint>
 #include <optional>
@@ -23,7 +30,7 @@ inline constexpr std::uint8_t kProtocolVersion = 1;
 inline constexpr std::size_t kFrameHeaderSize = 8;  // D08
 
 // 合法 UTF-8（拒绝代理区、超长编码与 > U+10FFFF）。
-inline bool is_valid_utf8(std::string_view text) noexcept
+inline bool isValidUtf8(std::string_view text) noexcept
 {
   const auto* data =
       reinterpret_cast<const unsigned char*>(text.data());
@@ -95,121 +102,128 @@ enum class FrameErrorKind {
 class FrameDecoder {
 public:
   // 喂入任意长度字节：半包、粘包统一处理。失败后保持 failed，不再产出
-  void feed(const std::uint8_t* data,std::size_t size) {
+  void feedBytes(const std::uint8_t* data,std::size_t size) {
     if (failed_) {
       return;
     }
-    buffer_.insert(buffer_.end(),data,data + size);
-    process();
-    compact();
+    input_buffer_.insert(input_buffer_.end(),data,data + size);
+    // 处理 buffer_ 中已收齐的帧
+    decodeAvailableFrames();
+    // 丢弃已消费前缀，防止长连接下 buffer_ 无界增长。
+    discardConsumedBytes();
   }
 
-  bool next(Frame& out) {
-    if (failed_ || ready_.empty()) {
+  //取出一帧；失败后不再产出
+  bool tryPopFrame(Frame& out) {
+    if (failed_ || decoded_frames_.empty()) {
       return false;
     }
-    out = std::move(ready_.front());
-    ready_.erase(ready_.begin());
+    out = std::move(decoded_frames_.front());
+    decoded_frames_.erase(decoded_frames_.begin());
     return true;
   }
 
-  [[nodiscard]] bool failed() const noexcept{return failed_;}
+  [[nodiscard]] bool hasFailed() const noexcept{return failed_;}
   [[nodiscard]] FrameErrorKind error() const noexcept{return error_;}
 
 private:
-  void fail(FrameErrorKind kind) {
+  void setFailure(FrameErrorKind kind) {
     failed_ = true;
     error_ = kind;
   }
 
   // 处理 buffer_ 中已收齐的帧
-  void process() {
-    while (!failed_) {
-      if (!header_done_) {
-        if (buffer_.size() - consumed_ < kFrameHeaderSize) {
-          return;  // 半包：帧头未收齐
+  void decodeAvailableFrames() {
+    while (true) {
+      if (!has_pending_header_) {
+        if (input_buffer_.size() - consumed_prefix_size_ < kFrameHeaderSize) {
+          return;  // 帧头半包，保留缓冲等待下次 feedBytes
         }
-        parse_header(consumed_);
-        if (failed_) {
+
+        if (!parseAndValidateHeader(consumed_prefix_size_)) {
           return;
         }
-        header_done_ = true;
+        has_pending_header_ = true;
       }
 
-      if (buffer_.size() - consumed_ < kFrameHeaderSize + body_length_) {
-        return;  // 半包：正文未收齐
+      //帧头已经收齐并校验过
+      if (input_buffer_.size() - consumed_prefix_size_ < kFrameHeaderSize + body_length_) {
+        return;  // 正文半包：正文未收齐
       }
+
       // 分配前已完成 max_body 校验，此处 body_length ≤ 65536（D09）。
       std::string body(reinterpret_cast<const char*>(
-        buffer_.data() + consumed_ + kFrameHeaderSize),body_length_);
-      header_done_ = false;
+        input_buffer_.data() + consumed_prefix_size_ + kFrameHeaderSize),body_length_);
+      has_pending_header_ = false;
 
-      if (!is_valid_utf8(body)) {
-        fail(FrameErrorKind::invalid_utf8);
+      if (!isValidUtf8(body)) {
+        setFailure(FrameErrorKind::invalid_utf8);
         return;
       }
-      ready_.push_back(Frame{frame_type_,std::move(body)});
+      decoded_frames_.push_back(Frame{frame_type_,std::move(body)});
       // 当前帧已完整转移到 ready_；推进游标后，循环才能从下一帧开始解析。
-      consumed_ += kFrameHeaderSize + body_length_;
+      consumed_prefix_size_ += kFrameHeaderSize + body_length_;
     }
   }
 
-  void parse_header(std::size_t offset) {
-    if (buffer_[offset] != kFrameMagicHigh || buffer_[offset + 1] != kFrameMagicLow) {
-      fail(FrameErrorKind::bad_magic);
-      return;
+  //校验 magic/version/type，分配前用 max_body 卡长度
+  bool parseAndValidateHeader(std::size_t offset) {
+    if (input_buffer_[offset] != kFrameMagicHigh || input_buffer_[offset + 1] != kFrameMagicLow) {
+      setFailure(FrameErrorKind::bad_magic);
+      return false;
     }
-    if (buffer_[offset + 2] != kProtocolVersion) {
-      fail(FrameErrorKind::bad_version);
-      return;
+    if (input_buffer_[offset + 2] != kProtocolVersion) {
+      setFailure(FrameErrorKind::bad_version);
+      return false;
     }
 
     const auto* descriptor =
-      find_protocol(static_cast<ProtocolType>(buffer_[offset + 3]));
+      findProtocol(static_cast<ProtocolType>(input_buffer_[offset + 3]));
     if (descriptor == nullptr) {
-      fail(FrameErrorKind::unknown_type);
-      return;
+      setFailure(FrameErrorKind::unknown_type);
+      return false;
     }
 
     // 必须在左移前提升到 32 位，避免 uint8_t 提升为 int 后移位溢出。
     const std::uint32_t body_length =
-      (static_cast<std::uint32_t>(buffer_[offset + 4]) << 24) |
-      (static_cast<std::uint32_t>(buffer_[offset + 5]) << 16) |
-      (static_cast<std::uint32_t>(buffer_[offset + 6]) << 8)  |
-      static_cast<std::uint32_t>(buffer_[offset + 7]);
+      (static_cast<std::uint32_t>(input_buffer_[offset + 4]) << 24) |
+      (static_cast<std::uint32_t>(input_buffer_[offset + 5]) << 16) |
+      (static_cast<std::uint32_t>(input_buffer_[offset + 6]) << 8)  |
+      static_cast<std::uint32_t>(input_buffer_[offset + 7]);
     if (body_length > descriptor->max_body) {
-      fail(FrameErrorKind::body_too_large); // D09：分配前拒绝
-      return;
+      setFailure(FrameErrorKind::body_too_large); // D09：分配前拒绝
+      return false;
     }
 
     frame_type_ = descriptor->type;
     body_length_ = body_length;
+    return true;
   }
 
   // 丢弃已消费前缀，防止长连接下 buffer_ 无界增长。
-  void compact() {
-    if (consumed_ > 0) {
-      buffer_.erase(buffer_.begin(),
-        buffer_.begin() + static_cast<std::ptrdiff_t>(consumed_));
-      consumed_ = 0;
+  void discardConsumedBytes() {
+    if (consumed_prefix_size_ > 0) {
+      input_buffer_.erase(input_buffer_.begin(),
+        input_buffer_.begin() + static_cast<std::ptrdiff_t>(consumed_prefix_size_));
+      consumed_prefix_size_ = 0;
     }
   }
-  std::vector<std::uint8_t> buffer_;
-  std::size_t consumed_ = 0;
+  std::vector<std::uint8_t> input_buffer_;  //尚待解码的输入缓冲
+  std::size_t consumed_prefix_size_ = 0;  //本轮已消费、待丢弃的前缀长度
   std::size_t body_length_ = 0;
   ProtocolType frame_type_ = ProtocolType::protocol_error;
-  bool header_done_ = false;
+  bool has_pending_header_ = false; //帧头已校验，等待正文
   bool failed_ = false;
   FrameErrorKind error_ = FrameErrorKind::decoder_failed;
-  std::vector<Frame> ready_;
+  std::vector<Frame> decoded_frames_; //已完成、等待调用方取走的帧
 };
 
 // 编码一帧：8 字节帧头（大端）＋正文；正文超过该 type 上限时双向拒绝（D09）。
-inline  std::optional<std::vector<std::uint8_t>> encode_frame(ProtocolType type,std::string_view body) {
-  const auto* descriptor = find_protocol(type);
+inline  std::optional<std::vector<std::uint8_t>> encodeFrame(ProtocolType type,std::string_view body) {
+  const auto* descriptor = findProtocol(type);
   // 出站也只允许已登记 type、长度合规且 UTF-8 合法的正文，与入站校验对称。
   if (descriptor == nullptr || body.size() > descriptor->max_body ||
-      !is_valid_utf8(body)) {
+      !isValidUtf8(body)) {
     return std::nullopt;
   }
 

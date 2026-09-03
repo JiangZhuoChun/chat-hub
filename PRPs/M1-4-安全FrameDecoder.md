@@ -4,7 +4,7 @@
 
 ## 1. 目标与范围
 
-在 shared contracts 建立帧层（D07—D09、D70）：8 字节帧头常量（magic `CH`＝0x43 0x48、version=1）、`FrameDecoder` 流式解码（半包／粘包统一处理、失败即锁存）、`encode_frame` 双向编码、合法 UTF-8 校验。全部纯 C++20 header-only。
+在 shared contracts 建立帧层（D07—D09、D70）：8 字节帧头常量（magic `CH`＝0x43 0x48、version=1）、`FrameDecoder` 流式解码（半包／粘包统一处理、失败即锁存）、`encodeFrame` 双向编码、合法 UTF-8 校验。全部纯 C++20 header-only。
 
 不做：UTF-8 之外的 JSON 解析；`protocol_error` 的发送与连接关闭动作（属 Session，M1-6／M1-7）；GoogleTest；头文件扫描式架构检查（后续完善）。
 
@@ -21,13 +21,13 @@
 | heartbeat | `max_body=0`，任何正文都拒绝 | D72 |
 | 解码器失败后 | 不再产出、不再接受输入；连接必须关闭 | D11 |
 
-实现决定：`feed()` 结束时压缩已消费前缀，防止长连接下缓冲无界增长。
+实现决定：`feedBytes()` 结束时压缩已消费前缀，防止长连接下缓冲无界增长。
 
 ## 3. 追踪
 
 | 来源 | 条目 |
 | --- | --- |
-| 设计 | D07—D09（帧结构与上限）、D11（协议错误关闭）、D70（magic／version／不重同步）、D218（`find_protocol` 判未知 type） |
+| 设计 | D07—D09（帧结构与上限）、D11（协议错误关闭）、D70（magic／version／不重同步）、D218（`findProtocol` 判未知 type） |
 | 路线 | W1 · M1-4 安全 FrameDecoder |
 
 ## 4. 结构变化
@@ -43,7 +43,7 @@ cmake --build --preset windows-mingw-debug
 ctest --preset windows-mingw-debug
 ```
 
-通过标准：CTest **4/4** 通过、0 失败 0 跳过；场景覆盖半包（逐字节喂入）、粘包（两帧一次）、空正文 heartbeat、4 GiB 超长、非法 magic／version、未知 type、非法 UTF-8（代理区）、encode↔decode 往返。
+通过标准：CTest **4/4** 通过、0 失败 0 跳过；场景覆盖半包（逐字节喂入）、粘包（两帧一次）、空正文 heartbeat、4 GiB 超长、非法 magic／version、未知 type、非法 UTF-8（代理区、超长编码、超出 Unicode 上限、截断序列）、encode↔decode 往返。
 
 ## 6. 风险与停止条件
 
@@ -65,4 +65,4 @@ cmake --build --preset windows-mingw-debug
 ctest --preset windows-mingw-debug
 ```
 
-退出码均为 0；CTest 4/4 通过、0 失败、0 跳过。修复包括：成功产出帧后推进已消费字节数；长度字段先转换为 `uint32_t` 再左移；编码端拒绝非法 UTF-8；测试验证半包仅在最后一个字节后产出，并覆盖编码端对未知 type、超长正文和非法 UTF-8 的拒绝。
+退出码均为 0；CTest 4/4 通过、0 失败、0 跳过。修复包括：成功产出帧后推进已消费字节数；长度字段先转换为 `uint32_t` 再左移；编码端拒绝非法 UTF-8；测试验证半包仅在最后一个字节后产出，并覆盖编码端对未知 type、超长正文、代理区、C0/C1、三／四字节超长编码、超出 Unicode 上限和截断 UTF-8 序列的拒绝。

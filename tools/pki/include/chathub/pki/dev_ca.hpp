@@ -11,7 +11,7 @@
 #include <string_view>
 #include <vector>
 
-namespace chathub::pki{
+namespace chathub::pki {
 
 inline constexpr std::string_view kDefaultServerIpv4 = "127.0.0.1";
 inline constexpr int kCaValidityDays = 3650;
@@ -32,7 +32,7 @@ struct IssueDevCa {
 std::optional<IssueDevCa> issueDevCa(std::string_view ipv4);
 
 // trusted-ca.pem（仅根公钥）＋ ca-key.pem / server-cert.pem / server-key.pem。
-bool writeDevCaFiles(const IssueDevCa& issued,std::string_view dir);
+bool writeDevCaFiles(const IssueDevCa& issued, std::string_view output_dir);
 
 // 证书合同事实：供测试断言 D125/D126，不暴露 OpenSSL 类型。
 struct CertFacts {
@@ -46,7 +46,9 @@ struct CertFacts {
   bool is_ec = false;
   int ec_bits = 0;              // 256 即 P-256
   int serial_bit_length = 0;
-  std::string signature_oid;    // 如 "1.2.840.10045.4.3.2"（ecdsa-with-SHA256）
+  std::string group_name;        // 曲线名，如 prime256v1 或 P-256
+  std::string serial_hex;        // 序列号十六进制（小写）
+  std::string signature_oid;     // 如 "1.2.840.10045.4.3.2"
   std::vector<std::string> san_ips;  // 仅 IPv4
   std::time_t not_before = 0;
   std::time_t not_after = 0;
@@ -55,6 +57,8 @@ struct CertFacts {
 std::optional<CertFacts> inspectCertPem(std::string_view pem);
 
 // cert 是否由 issuer 的私钥签发（用 X509_verify，不做完整链/时间校验）。
-bool verifySignedBy(std::string_view cert_pem,std::string_view issuer_pem);
+bool verifySignedBy(std::string_view cert_pem, std::string_view issuer_pem);
 
-}
+// 证书公钥与私钥是否匹配。
+bool certMatchesKey(std::string_view cert_pem, std::string_view key_pem);
+}  // namespace chathub::pki

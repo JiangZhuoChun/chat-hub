@@ -16,7 +16,7 @@ using namespace chathub::contracts;
     }                                                  \
   } while (false)
 
-static int test_unique_type_and_name() {
+static int testUniqueTypeAndName() {
   for (std::size_t i = 0; i < kProtocolDescriptors.size(); ++i) {
     for (std::size_t j = i + 1; j < kProtocolDescriptors.size(); ++j) {
       CHECK(kProtocolDescriptors[i].type != kProtocolDescriptors[j].type);
@@ -27,23 +27,23 @@ static int test_unique_type_and_name() {
   return 0;
 }
 
-static int test_find_protocol()
+static int testFindProtocol()
 {
   // 已登记 type 必须定位到自身；不仅验证“找到了”，还验证没有错指到别的描述项。
   for (const auto& descriptor : kProtocolDescriptors) {
-    CHECK(find_protocol(descriptor.type) == &descriptor);
+    CHECK(findProtocol(descriptor.type) == &descriptor);
   }
 
   // 0x03 是设计合同保留号，供 M1-4 将其判为未知 type，不能被意外注册。
-  CHECK(find_protocol(static_cast<ProtocolType>(0x03)) == nullptr);
+  CHECK(findProtocol(static_cast<ProtocolType>(0x03)) == nullptr);
   return 0;
 }
 
-static int test_request_response_pairing() {
+static int testRequestResponsePairing() {
   for (const auto& d : kProtocolDescriptors) {
     if (d.direction == Direction::request) {
       CHECK(d.response.has_value());
-      const auto* response = find_protocol(*d.response);
+      const auto* response = findProtocol(*d.response);
       CHECK(response != nullptr);
       CHECK(response->direction == Direction::response);
     } else if (d.direction == Direction::response) {
@@ -62,7 +62,7 @@ static int test_request_response_pairing() {
   return 0;
 }
 
-constexpr bool is_preauth_type(const ProtocolType type) noexcept
+constexpr bool isPreauthType(const ProtocolType type) noexcept
 {
   // 这十个 type 在 hello 后、认证成功前使用；D72 要求它们仅允许未认证状态。
   switch (type) {
@@ -82,37 +82,37 @@ constexpr bool is_preauth_type(const ProtocolType type) noexcept
   }
 }
 
-static int test_states()
+static int testStates()
 {
-  CHECK(has_state(ConnectionStates::awaiting_hello,
+  CHECK(hasState(ConnectionStates::awaiting_hello,
     ConnectionState::awaiting_hello));
-  CHECK(!has_state(ConnectionStates::awaiting_hello,
+  CHECK(!hasState(ConnectionStates::awaiting_hello,
       ConnectionState::unauthenticated));
 
-  CHECK(has_state(ConnectionStates::unauthenticated,
+  CHECK(hasState(ConnectionStates::unauthenticated,
       ConnectionState::unauthenticated));
-  CHECK(!has_state(ConnectionStates::unauthenticated,
+  CHECK(!hasState(ConnectionStates::unauthenticated,
       ConnectionState::authenticated));
 
   // authenticated 对应第三个状态位（1 << 2）；正反例防止位掩码再次错位。
-  CHECK(has_state(ConnectionStates::authenticated,
+  CHECK(hasState(ConnectionStates::authenticated,
       ConnectionState::authenticated));
-  CHECK(!has_state(ConnectionStates::authenticated,
+  CHECK(!hasState(ConnectionStates::authenticated,
       ConnectionState::awaiting_hello));
 
   // D72 逐类精确断言：相等而非“包含”，防止状态集合被错误扩大。
-  CHECK(find_protocol(ProtocolType::hello_request)->allowed_states
+  CHECK(findProtocol(ProtocolType::hello_request)->allowed_states
       == ConnectionStates::awaiting_hello);
-  CHECK(find_protocol(ProtocolType::hello_response)->allowed_states
+  CHECK(findProtocol(ProtocolType::hello_response)->allowed_states
       == ConnectionStates::awaiting_hello);
-  CHECK(find_protocol(ProtocolType::protocol_error)->allowed_states
+  CHECK(findProtocol(ProtocolType::protocol_error)->allowed_states
       == ConnectionStates::all);
-  CHECK(find_protocol(ProtocolType::heartbeat)->allowed_states
+  CHECK(findProtocol(ProtocolType::heartbeat)->allowed_states
       == (ConnectionStates::unauthenticated | ConnectionStates::authenticated));
 
 
   for (const auto& d : kProtocolDescriptors) {
-    if (is_preauth_type(d.type)) {
+    if (isPreauthType(d.type)) {
       CHECK(d.allowed_states == ConnectionStates::unauthenticated);
     } else if (d.type == ProtocolType::hello_request
         || d.type == ProtocolType::hello_response
@@ -127,7 +127,7 @@ static int test_states()
   return 0;
 }
 
-static int test_limits_and_timeouts() {
+static int testLimitsAndTimeouts() {
   for (const auto& d : kProtocolDescriptors) {
     CHECK(d.max_body <= kMaxJsonBody);  // D09
     if (d.type == ProtocolType::heartbeat) {
@@ -139,43 +139,43 @@ static int test_limits_and_timeouts() {
       CHECK(d.default_timeout_ms == 0);
     }
   }
-  CHECK(find_protocol(ProtocolType::hello_request)->default_timeout_ms == 5000);
-  CHECK(find_protocol(ProtocolType::login_request)->default_timeout_ms ==
+  CHECK(findProtocol(ProtocolType::hello_request)->default_timeout_ms == 5000);
+  CHECK(findProtocol(ProtocolType::login_request)->default_timeout_ms ==
         10000);
-  CHECK(find_protocol(ProtocolType::logout_request)->default_timeout_ms ==
+  CHECK(findProtocol(ProtocolType::logout_request)->default_timeout_ms ==
         2000);
-  CHECK(find_protocol(ProtocolType::conversation_history_request)
+  CHECK(findProtocol(ProtocolType::conversation_history_request)
             ->default_timeout_ms == 10000);
   return 0;
 }
 
-static int test_capability() {
-  CHECK(find_protocol(ProtocolType::message_send_request)->capability ==
+static int testCapability() {
+  CHECK(findProtocol(ProtocolType::message_send_request)->capability ==
         "text_v1");
-  CHECK(find_protocol(ProtocolType::message_received_push)->capability ==
+  CHECK(findProtocol(ProtocolType::message_received_push)->capability ==
         "text_v1");
-  CHECK(find_protocol(ProtocolType::hello_request)->capability.empty());
-  CHECK(find_protocol(ProtocolType::login_request)->capability.empty());
+  CHECK(findProtocol(ProtocolType::hello_request)->capability.empty());
+  CHECK(findProtocol(ProtocolType::login_request)->capability.empty());
   return 0;
 }
 
 int main() {
-  if (const int rc = test_unique_type_and_name()) {
+  if (const int rc = testUniqueTypeAndName()) {
     return rc;
   }
-  if (const int rc = test_request_response_pairing()) {
+  if (const int rc = testRequestResponsePairing()) {
     return rc;
   }
-  if (const int rc = test_find_protocol()) {
+  if (const int rc = testFindProtocol()) {
     return rc;
   }
-  if (const int rc = test_states()) {
+  if (const int rc = testStates()) {
     return rc;
   }
-  if (const int rc = test_limits_and_timeouts()) {
+  if (const int rc = testLimitsAndTimeouts()) {
     return rc;
   }
-  if (const int rc = test_capability()) {
+  if (const int rc = testCapability()) {
     return rc;
   }
   return 0;

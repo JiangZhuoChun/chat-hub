@@ -14,6 +14,7 @@
 // └─────────────────────────────────────────────────────┘
 #include <openssl/asn1.h>
 #include <openssl/bn.h>
+#include <openssl/crypto.h>
 #include <openssl/evp.h>
 #include <openssl/objects.h>
 #include <openssl/pem.h>
@@ -24,6 +25,7 @@
 #include <ctime>
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -136,14 +138,21 @@ std::string pkeyToPem(EVP_PKEY* key) {
   // kstr   密码缓冲区  klen   密码长度      callback  密码回调     userdata
   // 回调用户数据
   if (!bio || PEM_write_bio_PrivateKey(bio.get(), key, nullptr, nullptr, 0,
-                                       nullptr, nullptr)) {
+                                       nullptr, nullptr) != 1) {
     return {};
   }
   return bioToString(bio.get());
 }
+// BIO_new_mem_buf 接受 int 长度，窄化前先拒绝异常大的输入。
+BioPtr memBio(std::string_view data) {
+  if (data.size() > static_cast<std::size_t>(std::numeric_limits<int>::max())) {
+    return {};
+  }
+  return BioPtr(BIO_new_mem_buf(data.data(), static_cast<int>(data.size())));
+}
 X509Ptr pemToX509(std::string_view pem) {
   // 创建一个“读取型内存 BIO”
-  const BioPtr bio(BIO_new_mem_buf(pem.data(), static_cast<int>(pem.size())));
+  const BioPtr bio = memBio(pem);
   if (!bio) return {};
 
   return X509Ptr(PEM_read_bio_X509(bio.get(), nullptr, nullptr, nullptr));
@@ -168,7 +177,7 @@ std::string fingerPrint(X509* cert) {
 }
 
 std::time_t asn1ToTime(const ASN1_TIME* when) {
-  std::tm t{};
+  std::tm t = {};
   if (!when || ASN1_TIME_to_tm(when, &t) != 1) return 0;
 #ifdef _WIN32
   return _mkgmtime(&t);
@@ -188,7 +197,7 @@ bool isIpv4Literal(std::string_view text) noexcept {
     const std::size_t dot = rest.find('.');
     const std::string_view octet = rest.substr(0, dot);
 
-    if (octet.end() || octet.size() > 3) return false;
+    if (octet.empty() || octet.size() > 3) return false;
     if (octet.size() > 1 && octet[0] == '0') return false;
 
     int value = 0;
@@ -252,7 +261,7 @@ std::optional<IssueDevCa> issueDevCa(std::string_view ipv4) {
               "serverAuth") ||
       !addExt(leaf.get(), ca.get(), leaf.get(), NID_subject_alt_name,
               san.c_str()) ||
-      !addExt(leaf.get(), ca.get(), leaf.get(), NID_subject_key_identifier,
+      !addExt(leaf.get(), ca.get(), leaf.get(), NID_authority_key_identifier,
               "keyid:always")) {
     return std::nullopt;
   }
@@ -274,26 +283,27 @@ std::optional<IssueDevCa> issueDevCa(std::string_view ipv4) {
   return out;
 }
 
-// 将开发用的根证书和服务器证书写入文件
-bool writeDevCaFiles(const IssueDevCa& issued, std::string_view dir) {
+// 将开发用的根证书和服务器证书写入合同约定的四个文件。
+bool writeDevCaFiles(const IssueDevCa& issued, std::string_view output_dir) {
   std::error_code ec;
-  const std::filesystem::path dir_{std::string(dir)};
-  std::filesystem::create_directories(dir, ec);
+  const std::filesystem::path output_path{std::string(output_dir)};
+  std::filesystem::create_directories(output_path, ec);
 
   if (ec) return false;
 
   const auto write_file = [&](const char* name, std::string_view text) {
-    std::ofstream out(dir_ / name, std::ios::binary | std::ios::trunc);
+    std::ofstream out(output_path / name, std::ios::binary | std::ios::trunc);
     if (!out) return false;
 
     out.write(text.data(), static_cast<std::streamsize>(text.size()));
+    out.close();  // 让最终 flush/close 错误反映到流状态。
     return static_cast<bool>(out);
   };
 
-  return write_file("ca_cert.pem", issued.ca_cert_pem) &&
-         write_file("ca_key.pem", issued.ca_key_pem) &&
-         write_file("server_cert.pem", issued.server_cert_pem) &&
-         write_file("server_key.pem", issued.server_key_pem);
+  return write_file("trusted-ca.pem", issued.ca_cert_pem) &&
+         write_file("ca-key.pem", issued.ca_key_pem) &&
+         write_file("server-cert.pem", issued.server_cert_pem) &&
+         write_file("server-key.pem", issued.server_key_pem);
 }
 
 //把 PEM 证书解析成 X509，然后只提取测试真正关心的事实，装进 CertFacts。
@@ -364,6 +374,13 @@ std::optional<CertFacts> inspectCertPem(std::string_view pem) {
     //判断是不是：EC / 椭圆曲线公钥
     f.is_ec = EVP_PKEY_base_id(pub) == EVP_PKEY_EC;
     f.ec_bits = EVP_PKEY_bits(pub);
+    // 曲线名用于区分 P-256 与其他 256 位曲线。
+    if (f.is_ec) {
+      char gname[64] = {0};
+      if (EVP_PKEY_get_group_name(pub,gname,sizeof(gname),nullptr) == 1) {
+        f.group_name = gname;
+      }
+    }
     EVP_PKEY_free(pub);
   }
 
@@ -379,15 +396,27 @@ std::optional<CertFacts> inspectCertPem(std::string_view pem) {
   }
   if (obj) {
     char buffer[128];
-    //强制输出数字形式 OID
-    OBJ_obj2txt(buffer,sizeof(buffer),obj,1);
-    f.signature_oid = buffer;
+    // 强制输出数字形式 OID；返回值达到缓冲区长度表示结果被截断。
+    const int written = OBJ_obj2txt(buffer, sizeof(buffer), obj, 1);
+    if (written > 0 && written < static_cast<int>(sizeof(buffer))) {
+      f.signature_oid = buffer;
+    }
   }
 
-  // 序列号位数：BN_num_bits 对标生成的 128 bit 随机非零要求。
+  // 序列号：位数对标 128 bit，hex 用于比较两次随机结果。
   if (const auto* serial = X509_get_serialNumber(cert.get())) {
     if (auto* bn = ASN1_INTEGER_to_BN(serial, nullptr)) {
       f.serial_bit_length = BN_num_bits(bn);
+      char* hex = BN_bn2hex(bn);
+      if (hex) {
+        f.serial_hex = hex;
+        OPENSSL_free(hex);
+      }
+      for (char& c : f.serial_hex) {
+        if (c >= 'A' && c <= 'F') {
+          c = static_cast<char>(c - 'A' + 'a');
+        }
+      }
       BN_free(bn);
     }
   }
@@ -403,11 +432,22 @@ bool verifySignedBy(std::string_view cert_pem, std::string_view issuer_pem) {
   X509Ptr issuer = pemToX509(issuer_pem);
   if (!cert || !issuer) return false;
 
-  EVP_PKEY* pub = X509_get_pubkey(issuer.get());
+  // X509_get_pubkey 会增加引用计数，交给 RAII 释放。
+  const PkeyPtr pub(X509_get_pubkey(issuer.get()));
   if (!pub) return false;
 
-  const bool ok = X509_verify(cert.get(),pub) == 1;
-  return ok;
+  return X509_verify(cert.get(), pub.get()) == 1;
 }
+// 证书公钥与私钥是否匹配。
+bool certMatchesKey(std::string_view cert_pem, std::string_view key_pem) {
+  const X509Ptr cert = pemToX509(cert_pem);
+  const BioPtr bio = memBio(key_pem);
+  if (!cert || !bio) return false;
 
+  const PkeyPtr key(
+      PEM_read_bio_PrivateKey(bio.get(), nullptr, nullptr, nullptr));
+  if (!key) return false;
+
+  return X509_check_private_key(cert.get(), key.get()) == 1;
+}
 }  // namespace chathub::pki

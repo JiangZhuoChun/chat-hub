@@ -1,6 +1,6 @@
 # M1-5 PRP：私有 CA
 
-> 状态：已给出待落地（2026-09-02）。实现内容已列出；落地与验证由用户完成。
+> 状态：自动验证通过（2026-09-02）。CTest 5/5 通过、0 失败、0 跳过；OpenSSL 3.5.4（CLion 自带 vcpkg，x64-mingw-dynamic）。
 
 ## 1. 目标与范围
 
@@ -52,7 +52,7 @@ ctest --preset windows-mingw-debug
 
 ## 7. 完成清单
 
-- [ ] vcpkg 锁定 OpenSSL 3.5.4 且 PKI target 链接成功；
-- [ ] 签发／检查 API 与 `chathub-dev-ca` CLI 落地；
-- [ ] CTest 5/5 通过；
-- [ ] 周文档两处同步。
+- [x] vcpkg 锁定 OpenSSL 3.5.4 且 PKI target 链接成功；
+- [x] 签发／检查 API 与 `chathub-dev-ca` CLI 落地；
+- [x] CTest 5/5 通过；
+- [x] 周文档两处同步。
