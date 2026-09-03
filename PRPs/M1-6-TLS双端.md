@@ -1,6 +1,6 @@
 # M1-6 PRP：TLS 双端
 
-> 状态：进行中（2026-09-03）。Task 1（服务端 `TlsContext`）自动验证通过；Task 2（客户端 `TlsClientConfig`）已给出待落地；Task 3（真实 TLS 集成）仅规划。
+> 状态：进行中（2026-09-03）。Task 1 的 transport 头源分离已实现未验证；Task 2 自动验证通过；Task 3 拆分：3a 服务端握手封装（本步）已给出、3b 真实 TLS 集成仅规划。
 
 ## 1. 目标与范围
 
@@ -14,7 +14,8 @@
 | --- | --- | --- |
 | Task 1（本步） | 服务端 `TlsContext`：asio ssl context 加载证书链＋私钥，TLS 1.2 下限 | 单测：有效证书加载成功；缺文件／坏私钥失败 |
 | Task 2 | 客户端 `TlsClientConfig`：OpenSSL 后端检查＋只信任私有 CA＋VerifyPeer | build 通过；CA 加载／后端可用并入 Task 3 |
-| Task 3 | asio 服务端 ↔ QSslSocket 客户端真实 TLS 集成＋握手逻辑 | 集成：握手成功；证书链失败拒绝；IP 不匹配拒绝；不降级明文 |
+| Task 3a（本步） | 服务端握手 `TlsHandshake`：async_handshake(server)＋5 秒超时 | build 通过；集成验证并入 3b |
+| Task 3b | asio 服务端 ↔ QSslSocket 客户端真实 TLS 集成 | 握手成功；证书链失败拒绝；IP 不匹配拒绝；不降级明文 |
 
 ## 3. 行为合同（D62／D63／D73）
 
@@ -30,7 +31,7 @@
 
 ## 4. 结构变化
 
-- Task 1：`vcpkg.json` 加 `asio`；`chat-server/CMakeLists.txt` transport 链 asio＋OpenSSL＋contracts；新增 `chat-server/include/chathub/server/transport/tls_context.hpp`、`tests/tls_context_test.cpp`
+- Task 1：`vcpkg.json` 加 `asio`；`chathub_server_transport` 为 STATIC adapter；`TlsContext` 声明位于 `chat-server/include/chathub/server/transport/tls_context.hpp`，实现位于 `chat-server/src/transport/tls_context.cpp`；测试位于 `tests/tls_context_test.cpp`
 - Task 2：`client-qt/CMakeLists.txt` 加 Qt6::Network；新增客户端 TLS 封装
 - Task 3：集成测试 target
 
