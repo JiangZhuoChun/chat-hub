@@ -1,6 +1,6 @@
 # M1-6 PRP：TLS 双端
 
-> 状态：进行中（2026-09-03）。Task 1（服务端 `TlsContext`）自动验证通过；Task 2（客户端 `QSslSocket`）、Task 3（真实 TLS 集成）仅规划。
+> 状态：进行中（2026-09-03）。Task 1（服务端 `TlsContext`）自动验证通过；Task 2（客户端 `TlsClientConfig`）已给出待落地；Task 3（真实 TLS 集成）仅规划。
 
 ## 1. 目标与范围
 
@@ -13,7 +13,7 @@
 | Task | 内容 | 验证 |
 | --- | --- | --- |
 | Task 1（本步） | 服务端 `TlsContext`：asio ssl context 加载证书链＋私钥，TLS 1.2 下限 | 单测：有效证书加载成功；缺文件／坏私钥失败 |
-| Task 2 | 客户端 `TlsClient`：QSslSocket＋OpenSSL 后端＋只信任私有 CA＋VerifyPeer＋IP 校验名 | 单测：CA 加载、后端可用 |
+| Task 2 | 客户端 `TlsClientConfig`：OpenSSL 后端检查＋只信任私有 CA＋VerifyPeer | build 通过；CA 加载／后端可用并入 Task 3 |
 | Task 3 | asio 服务端 ↔ QSslSocket 客户端真实 TLS 集成＋握手逻辑 | 集成：握手成功；证书链失败拒绝；IP 不匹配拒绝；不降级明文 |
 
 ## 3. 行为合同（D62／D63／D73）

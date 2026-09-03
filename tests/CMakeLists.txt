@@ -78,5 +78,8 @@ chathub_check_direct_links(chathub_server_transport
 )
 chathub_check_direct_links(chathub_client_domain)
 chathub_check_direct_links(chathub_client_application chathub::client::domain)
-chathub_check_direct_links(chathub_client_infrastructure chathub::client::domain)
+chathub_check_direct_links(chathub_client_infrastructure
+        chathub::client::domain
+        Qt6::Network
+)
 chathub_check_direct_links(chathub_client_presentation chathub::client::application)
