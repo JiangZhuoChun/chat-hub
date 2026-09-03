@@ -8,8 +8,9 @@ target_include_directories(chathub_contracts INTERFACE include)
 
 # IDE 归属：显式列出 header-only 源，使 CLion 使用 contracts 的解析上下文。
 target_sources(chathub_contracts INTERFACE
-    include/chathub/contracts/ids.hpp
-    include/chathub/contracts/outcome.hpp
-    include/chathub/contracts/protocol_descriptor.hpp
-    include/chathub/contracts/frame.hpp
+        include/chathub/contracts/ids.hpp
+        include/chathub/contracts/outcome.hpp
+        include/chathub/contracts/protocol_descriptor.hpp
+        include/chathub/contracts/frame.hpp
+        include/chathub/contracts/hello.hpp
 )

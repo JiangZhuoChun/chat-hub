@@ -102,6 +102,8 @@ class UuidId {
     return UuidId{detail::toLowerAscii(id)};
   }
 
+  UuidId() = default;
+
   [[nodiscard]] const std::string& value() const noexcept { return value_; }
 
  private:
