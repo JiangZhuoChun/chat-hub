@@ -26,7 +26,9 @@ target_link_libraries(chathub_server_infrastructure INTERFACE
 # Transport 层：真实网络 adapter 使用 STATIC 库和独立编译单元。
 add_library(chathub_server_transport STATIC
     src/tls_context.cpp
+    src/tls_handshake.cpp
     include/chathub/server/transport/tls_context.hpp
+    include/chathub/server/transport/tls_handshake.hpp
 )
 add_library(chathub::server::transport ALIAS chathub_server_transport)
 target_compile_features(chathub_server_transport PUBLIC cxx_std_20)
