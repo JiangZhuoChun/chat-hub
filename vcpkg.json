@@ -3,7 +3,8 @@
   "version-string": "1.0.0",
   "builtin-baseline": "30ef65cad98f08e7197c9a1656fbd871bcb72f2d",
   "dependencies": [
-    "openssl"
+    "openssl",
+    "asio"
   ],
   "overrides": [
     { "name": "openssl", "version": "3.5.4" }

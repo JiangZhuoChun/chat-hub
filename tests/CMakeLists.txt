@@ -40,6 +40,16 @@ target_link_libraries(chathub_pki_dev_ca_test PRIVATE
 add_test(NAME chathub.pki.dev_ca COMMAND chathub_pki_dev_ca_test)
 set_tests_properties(chathub.pki.dev_ca PROPERTIES LABELS "unit;pki")
 
+
+# M1-6 Task 1：服务端 TlsContext 证书加载（成功/失败路径）。
+add_executable(chathub_tls_context_test tls_context_test.cpp)
+target_link_libraries(chathub_tls_context_test PRIVATE
+        chathub::server::transport
+        chathub::pki
+)
+add_test(NAME chathub.server.tls_context COMMAND chathub_tls_context_test)
+set_tests_properties(chathub.server.tls_context PROPERTIES LABELS "unit;transport")
+
 #----------架构边界断言（最小版：直接链接白名单）----------
 function(chathub_check_direct_links target)
     set(_allowed ${ARGN})
@@ -57,7 +67,15 @@ endfunction()
 chathub_check_direct_links(chathub_server_domain)
 chathub_check_direct_links(chathub_server_application chathub::server::domain)
 chathub_check_direct_links(chathub_server_infrastructure chathub::server::domain)
-chathub_check_direct_links(chathub_server_transport chathub::server::application)
+chathub_check_direct_links(chathub_server_transport
+        chathub::server::application
+        asio::asio
+        OpenSSL::SSL
+        OpenSSL::Crypto
+        chathub::contracts
+        ws2_32
+        mswsock
+)
 chathub_check_direct_links(chathub_client_domain)
 chathub_check_direct_links(chathub_client_application chathub::client::domain)
 chathub_check_direct_links(chathub_client_infrastructure chathub::client::domain)
