@@ -1,6 +1,6 @@
 # M1-7 PRP：hello 与 capability 协商
 
-> 状态：已给出待落地（2026-09-03）。本 PRP 只规划 M1-7；不提前实现 M1-8 Session、认证、心跳或业务帧。当前工作区的 `shared/include/chathub/contracts/hello.hpp` 是待验证候选实现，不能作为已完成证据。
+> 状态：自动验证通过（2026-09-03，CTest 9/9）。Task 1 值类型＋capability 交集、Task 2 双端 JSON codec 已交付验证；真实 TLS→frame→hello 状态机集成与 5 秒超时留在 M1-8。
 
 ## 1. 目标与范围
 
@@ -12,7 +12,7 @@
 
 | 项目 | 当前事实／边界 |
 | --- | --- |
-| 现有合同 | `ProtocolType::hello_request=0x04`、`hello_response=0x05` 及 `awaiting_hello` 状态已在 `protocol_descriptor.hpp` 注册；`hello.hpp` 有未提交的值对象候选。 |
+| 现有合同 | `ProtocolType::hello_request=0x04`、`hello_response=0x05` 及 `awaiting_hello` 状态已在 `protocol_descriptor.hpp` 注册；`hello.hpp` 值对象与双端 codec 已交付，由 CTest `chathub.contracts.hello`、`chathub.hello.codec` 覆盖。 |
 | 现有网络能力 | M1-6 已验证 TLS 单连接握手；仓库尚无 server dispatcher 或 Session，因此本步不把 socket 操作塞进 hello handler。 |
 | 生产代码 | 常规模式下由用户落地；只有用户明确说“帮我实现／修改／修复”才代写。 |
 | 测试 | 接口稳定后可补充；测试不得伪造 TLS／帧／状态机已经存在。 |
@@ -37,15 +37,11 @@
 - JSON／结构／类型／长度错误属于协议错误并关闭连接；合法业务失败才使用 D68 的 `ok=false` 响应。
 - TLS 成功后开始 5 秒 hello 截止；超时关闭。M1-8 才在真实 Session 中装配该 timer。
 
-### 实施前必须明确的三项
+### 已确认的三项线协议决定（2026-09-03）
 
-以下内容在 D70／D72／D197 中没有唯一取值，不能由实现静默决定：
-
-1. `server_time` 的单位：Unix 秒、Unix 毫秒或 ISO-8601；候选 `int64_t` 只给出了类型，未给出单位。
-2. 不支持的 `client_version`／非 `windows` 平台的语义：协议错误关闭，还是 D68 的受控失败响应并保持／关闭连接。
-3. `client_version`、capability 单项长度、集合数量与未知 capability 的精确边界。全帧 64 KiB 上限不能替代外部输入字段上限。
-
-Task 2 开始前必须由用户或正式设计确认这三项；确认会改变线协议时，先解锁并同步正式设计文档，再实现。
+1. `server_time` 单位 = **Unix 秒**，`int64_t`，JSON number（D67）。
+2. `client_version ≠ "1.0"` → `protocol_error(unsupported_version, supported_version=1)` 后关闭（D70/D12 永久错误，不用 `ok:false`）；`platform ≠ "windows"` → `protocol_error(invalid_request)` 后关闭。二者由 M1-8 handler 判定。
+3. 字段边界：`client_version ≤ 32`、`platform ≤ 16`、capability 单项 `≤ 64`、集合 `≤ 16`；未知 capability 不报错，由交集裁掉（D197）。request_id 为小写 UUID v4（D69）。
 
 ## 4. 追踪
 

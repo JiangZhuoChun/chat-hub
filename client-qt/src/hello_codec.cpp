@@ -38,7 +38,7 @@ constexpr double kMaxSafeInteger = 9007199254740991.0;  // 2^53-1（D67）
 
 }  // namespace
 
-std::string encodeHelloRequest(const RequestId& request_id,
+contracts::Outcome<std::string> encodeHelloRequest(const RequestId& request_id,
                                const HelloRequest& request) {
   QJsonObject data;
   data.insert(QStringLiteral("client_version"),
@@ -62,9 +62,14 @@ std::string encodeHelloRequest(const RequestId& request_id,
 
 Outcome<HelloResponse> decodeHelloResponse(std::string_view json,
                                            RequestId& out_request_id) {
+  if (json.size() > contracts::kMaxJsonBytes) {
+    return invalidRequest("正文超过 64 KiB");
+  }
+
   const QByteArray bytes(json.data(), static_cast<qint64>(json.size()));
   QJsonParseError parse_error{};
   const QJsonDocument doc = QJsonDocument::fromJson(bytes, &parse_error);
+
   if (parse_error.error != QJsonParseError::NoError || doc.isNull()) {
     return invalidJson("hello_response 非合法 JSON");
   }
@@ -78,6 +83,7 @@ Outcome<HelloResponse> decodeHelloResponse(std::string_view json,
   if (!id_v.isString()) {
     return invalidRequestId("request_id 缺失或非字符串");
   }
+
   auto parsed_id =
       RequestId::parse(id_v.toString().toStdString());
   if (!parsed_id) {

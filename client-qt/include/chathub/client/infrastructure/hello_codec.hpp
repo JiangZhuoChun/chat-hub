@@ -15,8 +15,10 @@ namespace chathub::client::infrastructure {
 // 解析 D68 信封的 hello_response（成功 ok=true）。
 contracts::Outcome<contracts::HelloResponse> decodeHelloResponse(
     std::string_view json, contracts::RequestId& out_request_id);
+
+
 // 编码 D68 信封的 hello_request（含 UUID request_id）为紧凑 UTF-8 JSON。
-std::string encodeHelloRequest(const contracts::RequestId& request_id,
+contracts::Outcome<std::string> encodeHelloRequest(const contracts::RequestId& request_id,
                                const contracts::HelloRequest& request);
 
 }  // namespace chathub::client::infrastructure

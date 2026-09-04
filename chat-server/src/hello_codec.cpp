@@ -31,6 +31,11 @@ constexpr std::string_view kInvalidRequest = "invalid_request";
 
 Outcome<HelloRequest> decodeHelloRequest(std::string_view json,
                                          RequestId& out_request_id) {
+
+  if (json.size() > contracts::kMaxJsonBytes) {
+    return invalidRequest("正文超过 64 KiB");
+  }
+
   boost::system::error_code parse_ec;
   const boost::json::value root = boost::json::parse(json, parse_ec);
   if (parse_ec) {

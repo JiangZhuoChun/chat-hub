@@ -36,18 +36,23 @@ static int testAccountName()
 
 static int testUuidIds()
 {
-    // 同时验证 UUID 形状、大小写规范化与三个强类型可独立构造。
-    const std::string lower = "0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0";
-    CHECK(MessageId::parse(lower).has_value());
-    CHECK(MessageId::parse("0F1E2D3C-4B5A-6978-8796-A5B4C3D2E1F0").has_value());
-    CHECK(MessageId::parse("0F1E2D3C-4B5A-6978-8796-A5B4C3D2E1F0")->value() == lower);
-    CHECK(!MessageId::parse("").has_value());
-    CHECK(!MessageId::parse("0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1fg").has_value());  // 非 hex
-    CHECK(!MessageId::parse("0f1e2d3-c4b5a-6978-8796-a5b4c3d2e1f0").has_value());  // 分组错位
-    CHECK(!MessageId::parse("0f1e2d3c-4b5a-6978-8796-a5b4c3d2 1f0").has_value());  // 非法字符
-    CHECK(LocalMessageId::parse(lower).has_value());
-    CHECK(RequestId::parse(lower).has_value());
-    return 0;
+  // 合法 v4（版本位 4、变体位 8）、小写。
+  const std::string v4 = "0f1e2d3c-4b5a-4978-8796-a5b4c3d2e1f0";
+  CHECK(MessageId::parse(v4).has_value());
+  CHECK(MessageId::parse(v4)->value() == v4);
+  // 大写被拒绝（D69 线格式小写）。版本位是大写 4 也不得通过。
+  CHECK(!MessageId::parse("0F1E2D3C-4B5A-4978-8796-A5B4C3D2E1F0").has_value());
+  // 非 v4 被拒绝：版本位 1（v1）。
+  CHECK(!MessageId::parse("0f1e2d3c-4b5a-1978-8796-a5b4c3d2e1f0").has_value());
+  // 变体位非法：变体位 0（非 8/9/a/b）。
+  CHECK(!MessageId::parse("0f1e2d3c-4b5a-4978-0796-a5b4c3d2e1f0").has_value());
+  CHECK(!MessageId::parse("").has_value());
+  CHECK(!MessageId::parse("0f1e2d3c-4b5a-4978-8796-a5b4c3d2e1fg").has_value());  // 非 hex
+  CHECK(!MessageId::parse("0f1e2d3-c4b5a-4978-8796-a5b4c3d2e1f0").has_value());  // 分组错位
+  CHECK(!MessageId::parse("0f1e2d3c-4b5a-4978-8796-a5b4c3d2 1f0").has_value());  // 非法字符
+  CHECK(LocalMessageId::parse(v4).has_value());
+  CHECK(RequestId::parse(v4).has_value());
+  return 0;
 }
 
 static int testSeqs()

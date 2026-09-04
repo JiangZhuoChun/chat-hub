@@ -173,6 +173,12 @@ function(chathub_check_direct_links target)
 
     if (_deps)
         foreach (_dep IN LISTS _deps)
+            # STATIC 库的 PRIVATE 依赖会以 $<LINK_ONLY:...> 回传到 INTERFACE，
+            # 它只是链接传递、并非公开接口依赖，不参与架构边界校验（D199/D221）。
+            string(FIND "${_dep}" "$<LINK_ONLY:" _link_only_pos)
+            if (_link_only_pos EQUAL 0)
+                continue()
+            endif ()
             if (NOT _dep IN_LIST _allowed)
                 message(FATAL_ERROR
                         "架构违规（D199/D221）：${target} 直接链接了白名单之外的 ${_dep}"
@@ -191,7 +197,6 @@ chathub_check_direct_links(chathub_server_transport
         asio::asio
         OpenSSL::SSL
         OpenSSL::Crypto
-        Boost::json
         chathub::contracts
         ws2_32
         mswsock

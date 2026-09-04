@@ -40,7 +40,7 @@ inline bool isAccountName(std::string_view name) noexcept {
   return true;
 }
 
-// 36 字符 8-4-4-4-12 十六进制；接受大小写。
+// 36 字符 8-4-4-4-12 十六进制；线格式小写（D69），版本位 = v4，变体位 =8/9/a/b。
 inline bool isUuid(std::string_view id) noexcept {
   if (id.size() != 36) {
     return false;
@@ -52,12 +52,20 @@ inline bool isUuid(std::string_view id) noexcept {
       }
       continue;
     }
-    const bool hex = (id[i] >= '0' && id[i] <= '9') ||
-                     (id[i] >= 'a' && id[i] <= 'f') ||
-                     (id[i] >= 'A' && id[i] <= 'F');
+    // D69：request_id 线格式为小写，仅接受 0-9 与 a-f（拒绝大写）。
+    const bool hex =
+        (id[i] >= '0' && id[i] <= '9') || (id[i] >= 'a' && id[i] <= 'f');
     if (!hex) {
       return false;
     }
+  }
+  // 版本位（第 15 字符，即 index 14）必须是 4（UUID v4，D69）。
+  if (id[14] != '4') {
+    return false;
+  }
+  // 变体位（第 20 字符，即 index 19）按 RFC 4122 限制为 8/9/a/b。
+  if (id[19] != '8' && id[19] != '9' && id[19] != 'a' && id[19] != 'b') {
+    return false;
   }
   return true;
 }
@@ -94,7 +102,7 @@ template <typename Tag>
 class UuidId {
  public:
   // Tag 只存在于类型系统：三个 UUID 的运行时表示相同，但不能互相传参。
-  // 解析接受大小写，存储统一小写；线格式由 M1-3 ProtocolDescriptor 定型。
+  // 解析要求小写 UUID v4（D69），失败返回空 optional
   static std::optional<UuidId> parse(std::string_view id) {
     if (!detail::isUuid(id)) {
       return std::nullopt;
@@ -145,7 +153,9 @@ class DecimalSeq {
 
   [[nodiscard]] std::uint64_t value() const noexcept { return value_; }
 
-  [[nodiscard]] std::string toDecimalString() const { return std::to_string(value_); }
+  [[nodiscard]] std::string toDecimalString() const {
+    return std::to_string(value_);
+  }
 
  private:
   explicit DecimalSeq(std::uint64_t value) noexcept : value_(value) {}

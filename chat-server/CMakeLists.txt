@@ -50,8 +50,11 @@ target_link_libraries(chathub_server_transport PUBLIC
         asio::asio
         OpenSSL::SSL
         OpenSSL::Crypto
-        Boost::json
         chathub::contracts
+)
+# Boost.JSON 只出现在 hello_codec.cpp（实现），不进公开头，不传播给消费者。
+target_link_libraries(chathub_server_transport PRIVATE
+        Boost::json
 )
 
 # Windows 系统库：standalone Asio 的消费者必须链接 Winsock。
